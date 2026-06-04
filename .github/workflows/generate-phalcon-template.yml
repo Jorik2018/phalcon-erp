@@ -23,6 +23,11 @@ jobs:
             php-curl \
             php-zip \
             gcc \
+            make \
+            autoconf \
+            libtool \
+            pkg-config \
+            re2c \
             libpcre3-dev \
             unzip \
             zip \
@@ -33,16 +38,20 @@ jobs:
         run: |
           VERSION=$(curl -s https://api.github.com/repos/phalcon/cphalcon/releases/latest | jq -r .tag_name)
 
-          git clone --depth=1 --branch "$VERSION" \
-            https://github.com/phalcon/cphalcon.git
+          git clone --depth=1 --branch "$VERSION" https://github.com/phalcon/cphalcon.git
 
           cd cphalcon/build
           sudo ./install
+          cd ../..
 
-          PHP_EXT_DIR=$(php-config --extension-dir)
-          echo "extension=phalcon.so" | sudo tee /etc/php/*/cli/conf.d/50-phalcon.ini
+          PHP_INI_SCAN_DIR=$(php --ini | grep "Scan for additional .ini files" | awk -F': ' '{print $2}')
 
-          php -m | grep -i phalcon
+          echo "PHP ini scan dir: $PHP_INI_SCAN_DIR"
+
+          sudo mkdir -p "$PHP_INI_SCAN_DIR"
+          echo "extension=phalcon.so" | sudo tee "$PHP_INI_SCAN_DIR/50-phalcon.ini"
+
+          php --ri phalcon
 
       - name: Install latest DevTools
         run: |
