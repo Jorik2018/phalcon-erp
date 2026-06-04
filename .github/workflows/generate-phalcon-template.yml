@@ -60,6 +60,8 @@ jobs:
           git clone --depth=1 https://github.com/phalcon/phalcon-devtools.git
           cd phalcon-devtools
 
+          composer config --no-plugins allow-plugins.ocramius/package-versions true
+          composer config --no-plugins allow-plugins true
           composer config --no-plugins audit.block-insecure false || true
 
           composer update -W \
