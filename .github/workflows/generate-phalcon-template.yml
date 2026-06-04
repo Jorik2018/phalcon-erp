@@ -1,0 +1,81 @@
+name: Generate Phalcon Template
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Install PHP dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            php-cli \
+            php-dev \
+            php-mysql \
+            php-mbstring \
+            php-xml \
+            php-curl \
+            php-zip \
+            gcc \
+            libpcre3-dev \
+            unzip \
+            zip \
+            git \
+            jq
+
+      - name: Install latest Phalcon
+        run: |
+          VERSION=$(curl -s https://api.github.com/repos/phalcon/cphalcon/releases/latest | jq -r .tag_name)
+
+          git clone --depth=1 --branch "$VERSION" \
+            https://github.com/phalcon/cphalcon.git
+
+          cd cphalcon/build
+          sudo ./install
+
+          PHP_EXT_DIR=$(php-config --extension-dir)
+          echo "extension=phalcon.so" | sudo tee /etc/php/*/cli/conf.d/50-phalcon.ini
+
+          php -m | grep -i phalcon
+
+      - name: Install latest DevTools
+        run: |
+          git clone --depth=1 https://github.com/phalcon/phalcon-devtools.git
+
+          cd phalcon-devtools
+
+          if [ -f composer.json ]; then
+            curl -sS https://getcomposer.org/installer | php
+            sudo mv composer.phar /usr/local/bin/composer
+            composer install --no-interaction
+          fi
+
+          sudo ln -sf "$(pwd)/phalcon" /usr/local/bin/phalcon
+          sudo chmod +x /usr/local/bin/phalcon
+
+      - name: Generate project
+        run: |
+          phalcon project phalcon-erp
+
+      - name: Compress template
+        run: |
+          zip -r phalcon-erp.zip phalcon-erp
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: phalcon-erp-template
+          path: phalcon-erp.zip
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: phalcon-template-${{ github.run_number }}
+          name: Phalcon Template ${{ github.run_number }}
+          files: phalcon-erp.zip
