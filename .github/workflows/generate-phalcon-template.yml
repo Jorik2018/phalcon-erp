@@ -56,21 +56,12 @@ jobs:
       - name: Install latest DevTools
         run: |
           git clone --depth=1 https://github.com/phalcon/phalcon-devtools.git
-
-          cd phalcon-devtools
-
-          if [ -f composer.json ]; then
-            curl -sS https://getcomposer.org/installer | php
-            sudo mv composer.phar /usr/local/bin/composer
-            composer install --no-interaction
-          fi
-
-          sudo ln -sf "$(pwd)/phalcon" /usr/local/bin/phalcon
+          sudo ln -sf "$PWD/phalcon-devtools/phalcon" /usr/local/bin/phalcon
           sudo chmod +x /usr/local/bin/phalcon
 
       - name: Generate project
         run: |
-          phalcon project phalcon-erp
+          phalcon project phalcon-erp simple
 
       - name: Compress template
         run: |
