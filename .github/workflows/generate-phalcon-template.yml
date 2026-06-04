@@ -13,67 +13,29 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup PHP 8.1
+      - name: Setup PHP 8.1 with Phalcon
         uses: shivammathur/setup-php@v2
         with:
           php-version: "8.1"
           tools: composer:v2
-          extensions: pdo, pdo_mysql, mbstring, curl, zip, fileinfo, openssl
+          extensions: pdo, pdo_mysql, mbstring, curl, zip, fileinfo, openssl, phalcon
 
-      - name: Install build dependencies
+      - name: Verify Phalcon
         run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            gcc \
-            make \
-            autoconf \
-            libtool \
-            pkg-config \
-            re2c \
-            libpcre3-dev \
-            unzip \
-            zip \
-            git \
-            jq
-
-      - name: Install latest Phalcon
-        run: |
-          VERSION=$(curl -s https://api.github.com/repos/phalcon/cphalcon/releases/latest | jq -r .tag_name)
-          echo "Installing Phalcon $VERSION"
-
-          git clone --depth=1 --branch "$VERSION" https://github.com/phalcon/cphalcon.git
-
-          cd cphalcon/build
-          export CFLAGS="-Wno-incompatible-pointer-types"
-          sudo -E ./install
-          cd ../..
-
-          PHP_INI_SCAN_DIR=$(php --ini | grep "Scan for additional .ini files" | awk -F': ' '{print $2}')
-          sudo mkdir -p "$PHP_INI_SCAN_DIR"
-
-          echo "extension=phalcon.so" | sudo tee "$PHP_INI_SCAN_DIR/50-phalcon.ini"
-
+          php -v
+          php -m | grep -i phalcon
           php --ri phalcon
 
       - name: Install Phalcon DevTools
         run: |
-          git clone --depth=1 https://github.com/phalcon/phalcon-devtools.git
-          cd phalcon-devtools
+          composer global require phalcon/devtools:"^5.0@dev" --dev
+          echo "$HOME/.composer/vendor/bin" >> $GITHUB_PATH
+          echo "$HOME/.config/composer/vendor/bin" >> $GITHUB_PATH
 
-          composer config --no-plugins allow-plugins.ocramius/package-versions true
-          composer config --no-plugins allow-plugins true
-          composer config --no-plugins audit.block-insecure false || true
-
-          composer update -W \
-            --no-interaction \
-            --no-progress \
-            --no-audit \
-            --ignore-platform-reqs
-
-          sudo ln -sf "$(pwd)/phalcon" /usr/local/bin/phalcon
-          sudo chmod +x /usr/local/bin/phalcon
-
-          phalcon info || true
+      - name: Verify DevTools
+        run: |
+          phalcon info
+          phalcon commands
 
       - name: Generate project
         run: |
