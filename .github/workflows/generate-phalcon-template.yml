@@ -56,8 +56,19 @@ jobs:
       - name: Install latest DevTools
         run: |
           git clone --depth=1 https://github.com/phalcon/phalcon-devtools.git
-          sudo ln -sf "$PWD/phalcon-devtools/phalcon" /usr/local/bin/phalcon
+          cd phalcon-devtools
+
+          curl -sS https://getcomposer.org/installer | php
+          sudo mv composer.phar /usr/local/bin/composer
+
+          composer update --no-interaction \
+            --ignore-platform-req=php \
+            --ignore-platform-req=ext-phalcon
+
+          sudo ln -sf "$(pwd)/phalcon" /usr/local/bin/phalcon
           sudo chmod +x /usr/local/bin/phalcon
+
+          phalcon info || true
 
       - name: Generate project
         run: |
